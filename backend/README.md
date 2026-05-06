@@ -1,91 +1,87 @@
-# Announcements API — Backend Documentation
+# ⚙️ Backend — Announcements API
 
-## Prerequisites
-
-- **Node.js** v18 or higher
-- **npm** v9 or higher
+Node.js / Express 5 REST API with an embedded SQLite database, a WebSocket notification server, and a durable scheduled-notification engine.
 
 ---
 
-## Installation & Running
+## ✨ Features
 
-```bash
-# 1. Navigate to the backend directory
-cd backend
+- **Full CRUD REST API** for announcements with input validation (`express-validator`)
+- **WebSocket broadcast** — every connected client receives a `NEW_ANNOUNCEMENT` event when a post is published
+- **Scheduled notifications** — publication dates in the future are persisted to `notification_jobs` and fired by `node-schedule` at the right moment
+- **Restart-safe scheduler** — on server boot, all pending (not-yet-fired) jobs are re-queued from the database
+- **Automatic migrations** — SQL migration files are applied in order on every startup; already-applied files are skipped
+- **Auto-seeding** — 10 sample announcements are inserted when the database is empty
+- **WAL journal mode** — SQLite runs in Write-Ahead Logging mode for better concurrent read performance
 
-# 2. Install dependencies
-npm install
+---
 
-# 3. Start development server (auto-reloads on file change)
-npm run dev
+## 📁 Project Structure
 
-# OR start in production mode
-npm start
+```
+backend/
+├── package.json
+└── src/
+    ├── index.js                        # Entry point: Express + HTTP server + WS init + Scheduler boot
+    ├── routes/
+    │   └── announcements.js            # GET / POST / PUT / DELETE /api/announcements
+    ├── db/
+    │   ├── database.js                 # DB connection, WAL pragma, migrations, seeding
+    │   ├── migrate.js                  # Migration runner (reads .sql files, tracks applied)
+    │   └── migrations/
+    │       ├── 001_create_announcements.sql
+    │       └── 002_create_notification_jobs.sql
+    ├── scheduler/
+    │   └── notificationScheduler.js    # scheduleOrBroadcast / rescheduleJob / cancelJob / initScheduler
+    └── ws/
+        └── notifier.js                 # WebSocketServer wrapper: initWS() + broadcast()
 ```
 
-The server starts on **http://localhost:3001** by default.  
-Set the `PORT` environment variable to use a different port.
+---
 
-On first start, the SQLite database is created automatically at `data/announcements.db` and seeded with 10 sample announcements.
+## 🚀 Getting Started
+
+```bash
+npm install
+npm run dev     # nodemon auto-restart on file changes — http://localhost:3001
+npm start       # production start (no nodemon)
+```
+
+The database file is created automatically at `../data/announcements.db` (relative to `backend/`). The `data/` directory is git-ignored.
 
 ---
 
-## WebSocket
-
-A WebSocket server runs on the **same port** as the HTTP server.
-
-Connect to: `ws://localhost:3001`
-
-### Events emitted by the server
-
-| Event type | When | Payload |
-|---|---|---|
-| `NEW_ANNOUNCEMENT` | A new announcement is created via `POST /api/announcements` | `{ type: "NEW_ANNOUNCEMENT", data: <announcement object> }` |
-
----
-
-## API Endpoints
-
-Base URL: `http://localhost:3001/api`
-
----
+## 🔌 Endpoints
 
 ### `GET /api/announcements`
 
-Returns a paginated list of announcements, sorted by `last_update` descending.
+Returns a paginated, optionally filtered list of announcements.
 
-#### Query Parameters
+**Query parameters:**
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| `page` | integer | `1` | Page number |
-| `limit` | integer | `10` | Items per page (max 100) |
-| `search` | string | — | Full-text search across `title` and `body` |
-| `category` | string | — | Filter by category name (case-insensitive) |
+| `page` | integer ≥ 1 | `1` | Page number |
+| `limit` | integer 1–100 | `10` | Items per page |
+| `search` | string | — | Case-insensitive full-text search on `title` and `body` |
+| `category` | string | — | Comma-separated category values; matches any of the listed categories |
 
-#### Example Request
-
-```
-GET /api/announcements?page=1&limit=10&search=city&category=Health
-```
-
-#### Example Response
-
+**Response:**
 ```json
 {
   "data": [
     {
-      "id": 7,
-      "title": "Title 7",
-      "body": "Free health screening available at the community center.",
-      "publication_date": "2023-03-24T07:27:00.000Z",
-      "last_update": "2023-03-24T07:27:00.000Z",
-      "categories": ["City", "Health"],
-      "created_at": "2023-03-24T07:27:00.000Z"
+      "id": 1,
+      "title": "Title 1",
+      "body": "Community update...",
+      "publication_date": "2023-08-11T04:38:00.000Z",
+      "last_update": "2023-08-11T04:38:00.000Z",
+      "categories": ["City"],
+      "created_at": "2023-08-11T04:38:00.000Z"
     }
   ],
   "pagination": {
-    "total": 1,
+    "total": 10,
     "page": 1,
     "limit": 10,
     "totalPages": 1
@@ -99,142 +95,127 @@ GET /api/announcements?page=1&limit=10&search=city&category=Health
 
 Returns a single announcement by ID.
 
-#### Example Response
-
-```json
-{
-  "id": 1,
-  "title": "Title 1",
-  "body": "Community update about city improvements.",
-  "publication_date": "2023-08-11T04:38:00.000Z",
-  "last_update": "2023-08-11T04:38:00.000Z",
-  "categories": ["City"],
-  "created_at": "2023-08-11T04:38:00.000Z"
-}
-```
+**Response:** `200 OK` with the announcement object, or `404` if not found.
 
 ---
 
 ### `POST /api/announcements`
 
-Creates a new announcement and broadcasts a WebSocket notification.
+Creates a new announcement. If `publication_date` is in the past or present, a WebSocket broadcast fires immediately. If it is in the future, a scheduled job is created.
 
-#### Request Body
-
+**Request body:**
 ```json
 {
-  "title": "New Road Works",
-  "body": "Road maintenance starts Monday on Main Street.",
-  "publication_date": "2024-01-15T08:00:00.000Z",
+  "title": "New Park Opening",
+  "body": "The new park will open on Saturday.",
+  "publication_date": "2026-06-01T10:00:00.000Z",
   "categories": ["City", "Community events"]
 }
 ```
 
-#### Response — `201 Created`
+**Response:** `201 Created` with the created announcement object.
 
-```json
-{
-  "id": 11,
-  "title": "New Road Works",
-  "body": "Road maintenance starts Monday on Main Street.",
-  "publication_date": "2024-01-15T08:00:00.000Z",
-  "last_update": "2024-01-15T10:30:00.000Z",
-  "categories": ["City", "Community events"],
-  "created_at": "2024-01-15T10:30:00.000Z"
-}
-```
+**Validation errors:** `400 Bad Request` with an `errors` array.
 
 ---
 
 ### `PUT /api/announcements/:id`
 
-Updates an existing announcement. Sets `last_update` to current time.
+Updates an existing announcement. Any previously scheduled notification is cancelled and re-evaluated against the new `publication_date`.
 
-#### Request Body (same schema as POST)
+**Request body:** Same shape as `POST`.
 
-```json
-{
-  "title": "Updated Road Works",
-  "body": "Road works extended until Thursday.",
-  "publication_date": "2024-01-15T08:00:00.000Z",
-  "categories": ["City"]
-}
-```
-
-#### Response — `200 OK`
-
-Returns the updated announcement object.
+**Response:** `200 OK` with the updated announcement.
 
 ---
 
 ### `DELETE /api/announcements/:id`
 
-Deletes an announcement permanently.
+Deletes an announcement. Any pending scheduled notification is cancelled first.
 
-#### Response — `204 No Content`
+**Response:** `204 No Content`, or `404` if not found.
 
 ---
 
-## Error Responses
+## 🔌 WebSocket
 
-All error responses follow this format:
+The WebSocket server shares the same port as the HTTP server (`ws://localhost:3001`).
 
-```json
-{ "error": "Announcement not found" }
-```
-
-Validation errors:
-
+**Event message format:**
 ```json
 {
-  "errors": [
-    { "msg": "Title is required", "path": "title", ... }
-  ]
+  "type": "NEW_ANNOUNCEMENT",
+  "data": {
+    "id": 7,
+    "title": "...",
+    "body": "...",
+    "publication_date": "...",
+    "last_update": "...",
+    "categories": ["City"],
+    "created_at": "..."
+  }
 }
 ```
 
----
-
-## Testing with Postman
-
-1. Import Postman and create a new **Collection** called `Announcements API`.
-2. Set the base URL variable to `http://localhost:3001`.
-
-### Quick curl examples
-
-```bash
-# List announcements (page 1)
-curl http://localhost:3001/api/announcements
-
-# Search by text
-curl "http://localhost:3001/api/announcements?search=health"
-
-# Filter by category
-curl "http://localhost:3001/api/announcements?category=City"
-
-# Get single
-curl http://localhost:3001/api/announcements/1
-
-# Create
-curl -X POST http://localhost:3001/api/announcements \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Test","body":"Test body","publication_date":"2024-01-01T10:00:00.000Z","categories":["City"]}'
-
-# Update
-curl -X PUT http://localhost:3001/api/announcements/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Updated","body":"Updated body","publication_date":"2024-01-01T10:00:00.000Z","categories":["Health"]}'
-
-# Delete
-curl -X DELETE http://localhost:3001/api/announcements/1
-```
+Events are sent to **all connected clients** using `wss.clients.forEach`.
 
 ---
 
-## Available Categories
+## ⏰ Notification Scheduler
 
-```
-City, Community events, Crime & Safety, Culture,
-Discounts & Benefits, Emergencies, For Seniors,
-Health, Kids & Family
-```
+The scheduler (`src/scheduler/notificationScheduler.js`) manages deferred WebSocket broadcasts:
+
+| Function | Called when | Behaviour |
+|---|---|---|
+| `scheduleOrBroadcast(ann)` | After `POST` | Broadcasts immediately if `publication_date ≤ now`, otherwise persists a `notification_jobs` row and schedules a `node-schedule` job |
+| `rescheduleJob(ann)` | After `PUT` | Cancels any existing in-memory job, re-evaluates the new date |
+| `cancelJob(id)` | Before `DELETE` | Cancels in-memory job + removes DB row |
+| `initScheduler()` | Server boot | Re-queues all pending (unfired) rows; skips missed jobs silently |
+
+In-memory jobs are tracked in a `Map<announcementId, Job>`. The `notification_jobs` table provides durability across restarts.
+
+---
+
+## 🗄️ Database
+
+**Driver:** `better-sqlite3` (synchronous API, no callback/promise overhead)  
+**File:** `data/announcements.db` (WAL + foreign keys enabled)
+
+### Tables
+
+#### `announcements`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment |
+| `title` | TEXT | Required |
+| `body` | TEXT | Required |
+| `publication_date` | TEXT | ISO 8601 string |
+| `last_update` | TEXT | ISO 8601; updated on every `PUT` |
+| `categories` | TEXT | JSON array, e.g. `["City","Health"]` |
+| `created_at` | TEXT | ISO 8601; set once on `POST` |
+
+#### `notification_jobs`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment |
+| `announcement_id` | INTEGER | UNIQUE FK → `announcements.id` ON DELETE CASCADE |
+| `scheduled_for` | TEXT | ISO 8601; when to fire the WS broadcast |
+| `fired_at` | TEXT | NULL = pending; ISO string when fired |
+
+### Adding a new migration
+
+Create `backend/src/db/migrations/NNN_description.sql` and the next server start will apply it automatically.
+
+---
+
+## 📦 Dependencies
+
+| Package | Purpose |
+|---|---|
+| `express` ^5.2 | HTTP server + routing |
+| `better-sqlite3` ^12.9 | Synchronous SQLite driver |
+| `ws` ^8.20 | WebSocket server |
+| `node-schedule` ^2.1 | Date-based job scheduling |
+| `express-validator` ^7.3 | Input validation middleware |
+| `cors` ^2.8 | Cross-origin request headers |
+| `nodemon` ^3.1 | Dev: auto-restart on file changes |
