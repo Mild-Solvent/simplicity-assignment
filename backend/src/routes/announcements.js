@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const db = require('../db/database');
-const { broadcast } = require('../ws/notifier');
+const { scheduleOrBroadcast, rescheduleJob, cancelJob } = require('../scheduler/notificationScheduler');
 
 const router = express.Router();
 
@@ -115,8 +115,8 @@ router.post(
       db.prepare('SELECT * FROM announcements WHERE id = ?').get(result.lastInsertRowid)
     );
 
-    // WebSocket broadcast (bonus)
-    broadcast({ type: 'NEW_ANNOUNCEMENT', data: created });
+    // Schedule notification at publication_date (or broadcast immediately if in the past)
+    scheduleOrBroadcast(created);
 
     res.status(201).json(created);
   }
@@ -151,6 +151,9 @@ router.put(
       db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id)
     );
 
+    // Re-evaluate scheduled notification with the (possibly changed) publication_date
+    rescheduleJob(updated);
+
     res.json(updated);
   }
 );
@@ -164,6 +167,9 @@ router.delete(
 
     const row = db.prepare('SELECT id FROM announcements WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Announcement not found' });
+
+    // Cancel any pending scheduled notification before deleting
+    cancelJob(req.params.id);
 
     db.prepare('DELETE FROM announcements WHERE id = ?').run(req.params.id);
     res.status(204).send();

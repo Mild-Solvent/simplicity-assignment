@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const announcementsRouter = require('./routes/announcements');
 const { initWS } = require('./ws/notifier');
+const { initScheduler } = require('./scheduler/notificationScheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,4 +31,6 @@ initWS(server);
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🔌 WebSocket available on ws://localhost:${PORT}`);
+  // Re-queue any pending scheduled notifications from DB
+  initScheduler();
 });

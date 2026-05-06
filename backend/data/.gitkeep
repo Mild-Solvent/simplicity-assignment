@@ -1,0 +1,4 @@
+# This file keeps the data/ directory in git.
+# The actual SQLite .db files are git-ignored and created automatically at runtime.
+# To rebuild the database on a fresh clone: just run the server (npm start).
+# Migrations in src/db/migrations/ will be applied automatically.

@@ -32,6 +32,11 @@ function formatDate(iso) {
   return `${mm}/${dd}/${yyyy} ${hh}:${min}`;
 }
 
+/** True if the ISO date is strictly in the future */
+function isFuture(iso) {
+  return iso && new Date(iso) > new Date();
+}
+
 export default function AnnouncementsTable({
   data,
   pagination,
@@ -67,7 +72,28 @@ export default function AnnouncementsTable({
       {
         accessorKey: 'publication_date',
         header: 'Publication date',
-        cell: (info) => formatDate(info.getValue()),
+        cell: (info) => {
+          const val = info.getValue();
+          return (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {formatDate(val)}
+              {isFuture(val) && (
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '1px 7px',
+                  borderRadius: 10,
+                  background: '#fff3cd',
+                  color: '#856404',
+                  border: '1px solid #ffc107',
+                  whiteSpace: 'nowrap',
+                }}>
+                  ⏰ Scheduled
+                </span>
+              )}
+            </span>
+          );
+        },
       },
       {
         accessorKey: 'last_update',

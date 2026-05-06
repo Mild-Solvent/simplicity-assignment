@@ -1,8 +1,10 @@
 # Dependencies
 node_modules/
 
-# SQLite database file
-data/
+# SQLite database files (created at runtime — rebuilt via migrations)
+data/*.db
+data/*.db-shm
+data/*.db-wal
 
 # Environment variables
 .env
