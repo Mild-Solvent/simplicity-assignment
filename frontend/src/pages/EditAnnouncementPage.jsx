@@ -52,6 +52,29 @@ export default function EditAnnouncementPage() {
   const [body, setBody] = useState('');
   const [categories, setCategories] = useState([]);
   const [pubDate, setPubDate] = useState('');
+
+  /** Auto-insert separators as the user types digits (MM/DD/YYYY HH:mm) */
+  function handlePubDateChange(e) {
+    const raw = e.target.value;
+    // Allow the user to backspace freely: if they deleted a separator char,
+    // also remove the digit before it so they're not stuck.
+    const prev = pubDate;
+    let val = raw;
+
+    // Strip everything that is not a digit
+    const digits = val.replace(/\D/g, '');
+
+    // Rebuild the formatted string from digits
+    let formatted = '';
+    if (digits.length >= 1) formatted = digits.slice(0, 2);          // MM
+    if (digits.length >= 3) formatted += '/' + digits.slice(2, 4);   // /DD
+    if (digits.length >= 5) formatted += '/' + digits.slice(4, 8);   // /YYYY
+    if (digits.length >= 9) formatted += ' ' + digits.slice(8, 10);  // <space>HH
+    if (digits.length >= 11) formatted += ':' + digits.slice(10, 12); // :mm
+
+    // Cap at 16 chars (MM/DD/YYYY HH:mm)
+    setPubDate(formatted.slice(0, 16));
+  }
   const [loadError, setLoadError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -199,9 +222,10 @@ export default function EditAnnouncementPage() {
             type="text"
             className={`form-input${fieldErrors.pubDate ? ' error' : ''}`}
             value={pubDate}
-            onChange={(e) => setPubDate(e.target.value)}
+            onChange={handlePubDateChange}
             placeholder="MM/DD/YYYY HH:mm"
             maxLength={16}
+            inputMode="numeric"
           />
           {fieldErrors.pubDate ? (
             <div style={{ color: '#e53935', fontSize: 12, marginTop: 4 }}>{fieldErrors.pubDate}</div>
