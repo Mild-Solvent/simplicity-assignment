@@ -5,9 +5,10 @@ import {
   flexRender,
 } from '@tanstack/react-table';
 import { useMemo } from 'react';
+import Select from 'react-select';
 import { deleteAnnouncement } from '../api/announcements';
 
-const CATEGORIES = [
+const CATEGORY_OPTIONS = [
   'City',
   'Community events',
   'Crime & Safety',
@@ -17,7 +18,7 @@ const CATEGORIES = [
   'For Seniors',
   'Health',
   'Kids & Family',
-];
+].map((c) => ({ value: c, label: c }));
 
 /** Format ISO string → MM/DD/YYYY HH:mm */
 function formatDate(iso) {
@@ -38,8 +39,8 @@ export default function AnnouncementsTable({
   onPageChange,
   search,
   onSearchChange,
-  category,
-  onCategoryChange,
+  categories,
+  onCategoriesChange,
   onDeleted,
   loading,
   error,
@@ -147,16 +148,36 @@ export default function AnnouncementsTable({
           onChange={(e) => { onSearchChange(e.target.value); onPageChange(1); }}
         />
 
-        <select
-          id="category-filter"
-          value={category}
-          onChange={(e) => { onCategoryChange(e.target.value); onPageChange(1); }}
-        >
-          <option value="">All categories</option>
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        <div style={{ minWidth: 260, flex: '0 0 auto' }}>
+          <Select
+            inputId="category-filter"
+            isMulti
+            options={CATEGORY_OPTIONS}
+            value={categories}
+            onChange={(selected) => { onCategoriesChange(selected || []); onPageChange(1); }}
+            placeholder="Filter by category…"
+            classNamePrefix="rs"
+            styles={{
+              control: (base, state) => ({
+                ...base,
+                borderColor: state.isFocused ? '#f5a623' : '#ddd',
+                boxShadow: state.isFocused ? '0 0 0 3px rgba(245,166,35,0.12)' : 'none',
+                fontFamily: 'Lato, sans-serif',
+                fontSize: 13,
+                minHeight: 36,
+                '&:hover': { borderColor: '#f5a623' },
+              }),
+              multiValue: (base) => ({ ...base, background: '#f0f0f0', borderRadius: 10 }),
+              option: (base, state) => ({
+                ...base,
+                fontSize: 13,
+                background: state.isSelected ? '#f5a623' : state.isFocused ? '#fff9c4' : 'white',
+                color: state.isSelected ? '#fff' : '#333',
+              }),
+              placeholder: (base) => ({ ...base, color: '#aaa', fontSize: 13 }),
+            }}
+          />
+        </div>
 
         <Link to="/announcements/new" className="btn-new" id="btn-new-announcement">
           + New Announcement

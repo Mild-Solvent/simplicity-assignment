@@ -50,9 +50,13 @@ router.get(
     }
 
     if (category) {
-      // categories stored as JSON array string — use LIKE for simple containment
-      whereClauses.push("LOWER(categories) LIKE ?");
-      params.push(`%${category.toLowerCase()}%`);
+      // category may be a comma-separated list: "City,Health"
+      const cats = category.split(',').map((c) => c.trim()).filter(Boolean);
+      if (cats.length > 0) {
+        const orClauses = cats.map(() => 'LOWER(categories) LIKE ?').join(' OR ');
+        whereClauses.push(`(${orClauses})`);
+        cats.forEach((c) => params.push(`%${c.toLowerCase()}%`));
+      }
     }
 
     const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';

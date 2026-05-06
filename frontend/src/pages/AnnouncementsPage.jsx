@@ -10,7 +10,7 @@ export default function AnnouncementsPage() {
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,11 +18,13 @@ export default function AnnouncementsPage() {
     setLoading(true);
     setError(null);
     try {
+      // Pass selected category values as a comma-separated string
+      const categoryParam = categories.map((c) => c.value).join(',');
       const result = await getAnnouncements({
         page,
         limit: 10,
         ...(search ? { search } : {}),
-        ...(category ? { category } : {}),
+        ...(categoryParam ? { category: categoryParam } : {}),
       });
       setData(result.data);
       setPagination(result.pagination);
@@ -31,7 +33,7 @@ export default function AnnouncementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, category]);
+  }, [page, search, categories]);
 
   // Refetch when navigating back to this page (e.g. after create/edit)
   useEffect(() => {
@@ -49,8 +51,8 @@ export default function AnnouncementsPage() {
         onPageChange={setPage}
         search={search}
         onSearchChange={setSearch}
-        category={category}
-        onCategoryChange={setCategory}
+        categories={categories}
+        onCategoriesChange={setCategories}
         onDeleted={fetchData}
         loading={loading}
         error={error}
