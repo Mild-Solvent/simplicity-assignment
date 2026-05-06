@@ -12,10 +12,11 @@ export default function NotificationToast() {
     if (payload.type === 'NEW_ANNOUNCEMENT') {
       const id = ++idRef.current;
       const title = payload.data?.title ?? 'Untitled';
+      const body  = payload.data?.body  ?? '';
 
       setToasts((prev) => [
         ...prev,
-        { id, title },
+        { id, title, body },
       ]);
 
       // Auto-dismiss after 4 s
@@ -33,6 +34,7 @@ export default function NotificationToast() {
           <span>
             New announcement published:<br />
             <strong>{t.title}</strong>
+            {t.body && <span className="toast-body">{t.body}</span>}
           </span>
           <button className="toast-close" onClick={() => removeToast(t.id)}>×</button>
         </div>
