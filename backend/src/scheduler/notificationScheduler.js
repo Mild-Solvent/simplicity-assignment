@@ -154,12 +154,11 @@ function initScheduler() {
     const now = new Date();
 
     if (fireAt <= now) {
-      // Missed while server was down → fire immediately now
-      console.log(`⚡ Firing missed notification for announcement #${job.announcement_id}`);
-      const row = db.prepare('SELECT * FROM announcements WHERE id = ?').get(job.announcement_id);
-      if (row) {
-        broadcast({ type: 'NEW_ANNOUNCEMENT', data: parseAnnouncement(row) });
-      }
+      // Missed while server was down.
+      // Do NOT re-broadcast — the original scheduleOrBroadcast() call at creation
+      // time already notified connected clients. Re-broadcasting here would produce
+      // a duplicate toast for any client that stayed connected across the restart.
+      console.log(`⚡ Skipping re-broadcast for missed notification #${job.announcement_id} (already sent at creation).`);
       markFired(job.announcement_id);
     } else {
       createJob(job.announcement_id, fireAt);
