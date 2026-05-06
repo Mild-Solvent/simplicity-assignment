@@ -425,3 +425,160 @@ html, body, #root {
   margin-bottom: 16px;
   font-size: 13px;
 }
+
+/* ─── Portfolio Popup ───────────────────────────────────────────────────────── */
+@keyframes pp-slide-in {
+  from { opacity: 0; transform: translateY(32px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+@keyframes pp-slide-out {
+  from { opacity: 1; transform: translateY(0)   scale(1); }
+  to   { opacity: 0; transform: translateY(32px) scale(0.96); }
+}
+@keyframes pp-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pp-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes pp-bob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+
+.pp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 28px;
+  pointer-events: none; /* let clicks pass through backdrop */
+  animation: pp-fade-in 0.3s ease forwards;
+}
+.pp-backdrop.pp-hiding { animation: pp-fade-out 0.38s ease forwards; }
+
+.pp-box {
+  pointer-events: all;
+  position: relative;
+  width: 320px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.14),
+    0 2px 8px  rgba(0,0,0,0.08),
+    0 0 0 1px rgba(0,0,0,0.06);
+  overflow: hidden;
+  animation: pp-slide-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.pp-box.pp-box-hiding { animation: pp-slide-out 0.38s ease forwards; }
+
+.pp-topbar {
+  height: 4px;
+  background: linear-gradient(90deg, #f5a623 0%, #ff6b35 50%, #f5a623 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.pp-emoji {
+  font-size: 34px;
+  text-align: center;
+  margin: 18px 0 0;
+  animation: pp-bob 3s ease-in-out infinite;
+  display: block;
+  line-height: 1;
+}
+
+.pp-body {
+  padding: 14px 20px 20px;
+}
+
+.pp-headline {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.pp-text {
+  font-size: 12.5px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.pp-links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.pp-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e8961a;
+  text-decoration: none;
+  padding: 5px 8px;
+  border-radius: 7px;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.pp-link:hover {
+  background: #fff8ed;
+  color: #c97a10;
+  transform: translateX(3px);
+}
+
+.pp-link-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.pp-link-arrow {
+  width: 11px;
+  height: 11px;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.pp-github {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 0;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.15s;
+}
+.pp-github:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.pp-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #bbb;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.pp-close:hover { color: #555; background: #f5f5f5; }

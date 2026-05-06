@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import NotificationToast from './components/NotificationToast';
+import PortfolioPopup from './components/PortfolioPopup';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import EditAnnouncementPage from './pages/EditAnnouncementPage';
 
@@ -22,6 +23,7 @@ function AppShell() {
         </Routes>
       </div>
       <NotificationToast />
+      <PortfolioPopup />
     </div>
   );
 }
