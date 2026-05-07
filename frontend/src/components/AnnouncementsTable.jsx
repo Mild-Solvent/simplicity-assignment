@@ -99,6 +99,8 @@ export default function AnnouncementsTable({
         accessorKey: 'last_update',
         header: 'Last update',
         cell: (info) => formatDate(info.getValue()),
+        /* drives the col-last-update class for mobile hiding */
+        meta: { className: 'col-last-update' },
       },
       {
         accessorKey: 'categories',
@@ -174,7 +176,8 @@ export default function AnnouncementsTable({
           onChange={(e) => { onSearchChange(e.target.value); onPageChange(1); }}
         />
 
-        <div style={{ minWidth: 260, flex: '0 0 auto' }}>
+        {/* wrapper class lets CSS override minWidth on mobile */}
+        <div className="filter-select-wrap">
           <Select
             inputId="category-filter"
             isMulti
@@ -220,30 +223,44 @@ export default function AnnouncementsTable({
         ) : data?.length === 0 ? (
           <div className="state-message">No announcements found.</div>
         ) : (
-          <table className="ann-table">
-            <thead>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
-                  {hg.headers.map((h) => (
-                    <th key={h.id} className={h.id === 'actions' ? 'col-actions' : ''}>
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={cell.column.id === 'actions' ? 'col-actions' : ''}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="ann-table">
+              <thead>
+                {table.getHeaderGroups().map((hg) => (
+                  <tr key={hg.id}>
+                    {hg.headers.map((h) => (
+                      <th
+                        key={h.id}
+                        className={[
+                          h.id === 'actions' ? 'col-actions' : '',
+                          h.column.columnDef.meta?.className ?? '',
+                        ].filter(Boolean).join(' ') || undefined}
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className={[
+                          cell.column.id === 'actions' ? 'col-actions' : '',
+                          cell.column.columnDef.meta?.className ?? '',
+                        ].filter(Boolean).join(' ') || undefined}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {/* ─── Pagination ──────────────────────────────────────────────── */}

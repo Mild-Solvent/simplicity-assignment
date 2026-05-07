@@ -1,19 +1,28 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
-export default function Sidebar() {
-  const location = useLocation();
-
+export default function Sidebar({ isOpen, onClose }) {
   return (
-    <aside className="sidebar">
+    <aside
+      className={`sidebar${isOpen ? ' sidebar-open' : ''}`}
+      aria-hidden={!isOpen ? 'true' : undefined}
+    >
       <div className="sidebar-header">
         <span className="sidebar-header-icon">🏙</span>
         Test city
+        {/* Close button — only visible on mobile */}
+        <button className="sidebar-close" onClick={onClose} aria-label="Close navigation menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <nav className="sidebar-nav">
         <NavLink
           to="/announcements"
           className={({ isActive }) => 'sidebar-link' + (isActive ? ' active' : '')}
+          onClick={onClose}
         >
           {/* Bell icon */}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
